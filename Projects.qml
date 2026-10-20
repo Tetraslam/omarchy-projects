@@ -1,5 +1,5 @@
 // Project launcher: one key, type a few letters, Enter, and you're in an
-// OpenCode session in that project. Projects are ranked by zoxide (every cd
+// OpenCode session in that project, in a new tab of your Ghostty window. Projects are ranked by zoxide (every cd
 // teaches it) and show their current branch, so worktrees read apart.
 //
 //   Enter        terminal running opencode in the project
@@ -25,6 +25,7 @@ Item {
   property int selected: 0
   readonly property var matches: filter(projects, query)
   readonly property string scriptPath: String(Qt.resolvedUrl("projects.py")).replace("file://", "")
+  readonly property string openScript: String(Qt.resolvedUrl("open-terminal.sh")).replace("file://", "")
   readonly property int visibleRows: 9
 
   function alpha(c, a) { return Qt.rgba(c.r, c.g, c.b, a) }
@@ -73,12 +74,9 @@ Item {
   function launch(project, mode) {
     if (!project) return
     close()
-    var command = ["uwsm-app", "--", "xdg-terminal-exec", "--dir=" + project.path]
-    if (mode === "agent") command = command.concat(["bash", "-c", "opencode; exec bash"])
-    else if (mode === "editor") command = command.concat(["bash", "-c", "${EDITOR:-hx} .; exec bash"])
-    Quickshell.execDetached(command)
-    // Teach zoxide the pick, as a cd would.
-    Quickshell.execDetached(["zoxide", "add", project.path])
+    // A new tab in your Ghostty window when there is one; the typed cd
+    // teaches zoxide like any other.
+    Quickshell.execDetached([root.openScript, mode, project.path])
   }
 
   Process {
