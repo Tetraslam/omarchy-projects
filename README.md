@@ -6,6 +6,7 @@ One key to start working in a project. Press it, type a few letters, Enter, and 
 - Each project shows its current branch, so worktrees of one repo read apart.
 - Fuzzy matching prefers the project name and word starts.
 - Picking a project teaches zoxide, just like a `cd`.
+- Your machines are listed too: Tailscale peers (online ones first, phones skipped) and `~/.ssh/config` hosts. Enter opens an SSH session; type `ssh` to show only machines.
 
 | Key | |
 |---|---|
@@ -27,8 +28,12 @@ Bind it in `~/.config/hypr/bindings.lua`:
 o.bind("SUPER + R", "Projects", hl.dsp.global("projects:toggle"))
 ```
 
-`omarchy-shell projects toggle` works too. Requires `zoxide`, `python3`, `jq` and `wtype`. Ghostty on Linux has no command for opening a tab in an existing window, so the launcher focuses your most recent Ghostty window, presses Ctrl+Shift+T and types the `cd`; that also lands in your shell history.
+`omarchy-shell projects toggle` works too. Requires `zoxide`, `python3`, `jq` and `wtype`.
 
-## License
+To open projects as tabs in your Ghostty window, add this to `~/.bashrc`:
 
-MIT
+```bash
+[[ -f ~/.config/omarchy/plugins/tetraslam.projects/shell-hook.bash ]] && source ~/.config/omarchy/plugins/tetraslam.projects/shell-hook.bash
+```
+
+Ghostty on Linux has no command for opening a tab in an existing window, so the launcher focuses your most recent Ghostty window and presses Ctrl+Shift+T; the new tab's shell picks up the waiting `cd … && opencode` from a private file in `$XDG_RUNTIME_DIR` and runs it, adding it to your history.

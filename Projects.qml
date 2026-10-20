@@ -1,5 +1,7 @@
 // Project launcher: one key, type a few letters, Enter, and you're in an
-// OpenCode session in that project, in a new tab of your Ghostty window. Projects are ranked by zoxide (every cd
+// OpenCode session in that project, in a new tab of your Ghostty window.
+// Machines (Tailscale peers, ~/.ssh/config hosts) are listed too; Enter opens
+// an SSH session to them. Projects are ranked by zoxide (every cd
 // teaches it) and show their current branch, so worktrees read apart.
 //
 //   Enter        terminal running opencode in the project
@@ -54,6 +56,8 @@ Item {
     for (var i = 0; i < list.length; i++) {
       var p = list[i]
       var s = Math.max(score(p.name, q) * 2, score(p.display + " " + p.branch, q))
+      // "ssh tetra" (or just "ssh") narrows to machines.
+      if (p.kind === "machine") s = Math.max(s, score("ssh " + p.name, q) * 2)
       if (s >= 0) scored.push({ p: p, s: s, i: i })
     }
     scored.sort(function(a, b) { return b.s - a.s || a.i - b.i })
@@ -76,7 +80,8 @@ Item {
     close()
     // A new tab in your Ghostty window when there is one; the typed cd
     // teaches zoxide like any other.
-    Quickshell.execDetached([root.openScript, mode, project.path])
+    if (project.kind === "machine") Quickshell.execDetached([root.openScript, "ssh", project.host])
+    else Quickshell.execDetached([root.openScript, mode, project.path])
   }
 
   Process {
@@ -239,7 +244,7 @@ Item {
             Column {
               anchors.left: parent.left
               anchors.leftMargin: Style.space(12)
-              anchors.right: branch.left
+              anchors.right: onlineDot.visible ? onlineDot.left : branch.left
               anchors.rightMargin: Style.space(12)
               anchors.verticalCenter: parent.verticalCenter
               spacing: Style.space(1)
@@ -264,13 +269,25 @@ Item {
               }
             }
 
+            Rectangle {
+              id: onlineDot
+              visible: row.modelData.kind === "machine" && row.modelData.online !== null
+              anchors.right: branch.left
+              anchors.rightMargin: Style.space(8)
+              anchors.verticalCenter: parent.verticalCenter
+              width: Style.space(7)
+              height: width
+              radius: width / 2
+              color: row.modelData.online ? "#9ece6a" : root.alpha(root.fg, 0.25)
+            }
+
             Text {
               id: branch
               anchors.right: parent.right
               anchors.rightMargin: Style.space(12)
               anchors.verticalCenter: parent.verticalCenter
               width: Math.min(implicitWidth, list.width * 0.42)
-              text: row.modelData.branch
+              text: row.modelData.kind === "machine" ? "ssh" : row.modelData.branch
               color: root.dim
               font.family: Style.font.family
               font.pixelSize: Style.font.caption

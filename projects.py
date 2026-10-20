@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Projects for the launcher, most used first, as one JSON array.
+"""Projects (most used first) and machines for the launcher, as one JSON array.
 
 Ranks directories by zoxide's frecency (every `cd` teaches it), keeps the
 ones that are projects (git repos and worktrees), and appends repos under the
@@ -44,6 +44,36 @@ def zoxide():
     return ranked
 
 
+def machines():
+    """Tailscale peers you can SSH into (no phones), plus ~/.ssh/config hosts."""
+    found = {}
+    try:
+        status = json.loads(subprocess.run(["tailscale", "status", "--json"], capture_output=True,
+                                           text=True, timeout=3).stdout or "{}")
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        status = {}
+    for peer in (status.get("Peer") or {}).values():
+        if peer.get("OS") in ("android", "iOS"):
+            continue
+        name = peer.get("HostName") or ""
+        if name:
+            found[name] = {"kind": "machine", "name": name, "host": name, "online": bool(peer.get("Online")),
+                           "display": (peer.get("DNSName") or name).rstrip("."), "branch": peer.get("OS") or ""}
+    try:
+        for line in (HOME / ".ssh" / "config").read_text().splitlines():
+            parts = line.split()
+            if len(parts) >= 2 and parts[0].lower() == "host":
+                for host in parts[1:]:
+                    if any(c in host for c in "*?!") or host in found:
+                        continue
+                    found[host] = {"kind": "machine", "name": host, "host": host, "online": None,
+                                   "display": "ssh config", "branch": ""}
+    except OSError:
+        pass
+    rank = {True: 0, None: 1, False: 2}
+    return sorted(found.values(), key=lambda m: (rank[m["online"]], m["name"]))
+
+
 def pretty(path):
     text = str(path)
     home = str(HOME)
@@ -63,7 +93,7 @@ def main(argv):
         if branch is None:
             return
         seen.add(key)
-        projects.append({"path": key, "display": pretty(path), "name": path.name, "branch": branch})
+        projects.append({"kind": "project", "path": key, "display": pretty(path), "name": path.name, "branch": branch})
 
     for path in zoxide():
         add(path)
@@ -76,7 +106,7 @@ def main(argv):
         for child in children:
             add(child)
 
-    json.dump(projects, sys.stdout, separators=(",", ":"))
+    json.dump(projects + machines(), sys.stdout, separators=(",", ":"))
     sys.stdout.write("\n")
 
 
