@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "tetraslam.projects",
+  "name": "Projects",
+  "version": "0.1.0",
+  "author": "Shresht Bhowmick",
+  "license": "MIT",
+  "description": "One-key project launcher: type a few letters and get a terminal running OpenCode in that project, ranked by zoxide, with each repo's branch.",
+  "kinds": ["overlay"],
+  "keepLoaded": true,
+  "entryPoints": { "overlay": "Projects.qml" }
+}
